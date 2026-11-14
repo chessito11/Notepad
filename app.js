@@ -1,7 +1,7 @@
 'use strict';
 
 const TYPES = [
-  { id: 'all', label: 'All notes', icon: '▤' },
+  { id: 'all', label: 'All lists', icon: '▤' },
   { id: 'pinned', label: 'Pinned', icon: '★' },
   { id: 'Regular Note', label: 'Regular notes', icon: '✎' },
   { id: 'Checklist', label: 'Checklists', icon: '☑' },
@@ -20,6 +20,7 @@ const state = {
   activeId: null,
   filter: 'all',
   query: '',
+  itemFilter: 'all',
   saveTimer: null,
   installPrompt: null,
   loadingEditor: false
@@ -36,7 +37,8 @@ async function init() {
     'sidebar', 'scrim', 'menuButton', 'newButton', 'mobileNewButton', 'welcomeNewButton',
     'typeNav', 'searchInput', 'notesList', 'emptyList', 'listTitle', 'listCount',
     'welcome', 'noteEditor', 'titleInput', 'typeInput', 'projectInput', 'tagsInput',
-    'bodyInput', 'checklistInput', 'addChecklistButton', 'checklist', 'photoInput',
+    'bodyInput', 'checklistInput', 'addChecklistButton', 'addItemBottomButton',
+    'punchPdfButton', 'itemFilter', 'checklist', 'photoInput',
     'photoGrid', 'saveStatus', 'pinButton', 'saveButton', 'toolbarPdfButton',
     'toolbarDeleteButton', 'moreButton', 'moreMenu', 'duplicateButton', 'shareButton',
     'printButton', 'footerSaveButton', 'footerPdfButton', 'footerDeleteButton',
@@ -50,7 +52,7 @@ async function init() {
   updateConnectionStatus();
 
   try {
-    state.notes = await getAllNotes();
+    state.notes = (await getAllNotes()).map(normalizeNote);
     sortNotes();
     renderAll();
     if (state.notes.length) openNote(state.notes[0].id, false);
@@ -100,6 +102,10 @@ function bindEvents() {
     state.query = event.target.value.trim().toLowerCase();
     renderList();
   });
+  ui.notesList.addEventListener('click', event => {
+    const card = event.target.closest('.note-card');
+    if (card?.dataset.noteId) openNote(card.dataset.noteId);
+  });
 
   [ui.titleInput, ui.typeInput, ui.projectInput, ui.tagsInput, ui.bodyInput].forEach(input => {
     input.addEventListener('input', scheduleSave);
@@ -121,6 +127,17 @@ function bindEvents() {
   ui.footerDeleteButton.addEventListener('click', deleteActiveNote);
 
   ui.addChecklistButton.addEventListener('click', addChecklistItem);
+  ui.addItemBottomButton.addEventListener('click', () => {
+    ui.checklistInput.focus();
+    ui.checklistInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  ui.punchPdfButton.addEventListener('click', printNote);
+  ui.itemFilter.addEventListener('click', event => {
+    const button = event.target.closest('[data-item-filter]');
+    if (!button) return;
+    state.itemFilter = button.dataset.itemFilter;
+    renderChecklist(activeNote());
+  });
   ui.checklistInput.addEventListener('keydown', event => {
     if (event.key === 'Enter') {
       event.preventDefault();
@@ -198,9 +215,12 @@ function createNote() {
 
 function openNote(id, openMobile = true) {
   if (state.saveTimer) saveActiveNow();
-  const note = state.notes.find(item => item.id === id);
-  if (!note) return;
-  state.activeId = id;
+  const note = state.notes.find(item => String(item.id) === String(id));
+  if (!note) {
+    showToast('Could not open that note. Please refresh and try again.');
+    return;
+  }
+  state.activeId = note.id;
   loadEditor(note);
   renderList();
   if (openMobile) document.body.classList.add('editor-open');
@@ -209,16 +229,19 @@ function openNote(id, openMobile = true) {
 function loadEditor(note) {
   state.loadingEditor = true;
   ui.welcome.hidden = true;
+  ui.welcome.style.display = 'none';
   ui.noteEditor.hidden = false;
+  ui.noteEditor.style.display = 'flex';
   ui.titleInput.value = note.title || '';
   ui.typeInput.value = note.type || 'Regular Note';
   ui.projectInput.value = note.project || '';
   ui.tagsInput.value = note.tags || '';
   ui.bodyInput.value = note.body || '';
+  state.itemFilter = 'all';
   updatePinButton(note);
   renderChecklist(note);
   renderPhotos(note);
-  ui.updatedLabel.textContent = `Last updated ${formatDate(note.updatedAt)}`;
+  ui.updatedLabel.textContent = `Last updated ${formatDate(note.updatedAt || Date.now())}`;
   ui.saveStatus.textContent = 'Saved offline';
   state.loadingEditor = false;
 }
@@ -265,8 +288,9 @@ function addChecklistItem() {
   const text = ui.checklistInput.value.trim();
   const note = activeNote();
   if (!text || !note) return;
-  note.checklist.push({ id: makeId(), text, done: false });
+  note.checklist.push({ id: makeId(), text, done: false, photos: [] });
   ui.checklistInput.value = '';
+  state.itemFilter = 'all';
   renderChecklist(note);
   scheduleSave();
   ui.checklistInput.focus();
@@ -274,27 +298,133 @@ function addChecklistItem() {
 
 function renderChecklist(note) {
   ui.checklist.replaceChildren();
-  (note.checklist || []).forEach(item => {
-    const row = document.createElement('div');
-    row.className = `check-row${item.done ? ' done' : ''}`;
-    const box = document.createElement('input');
-    box.type = 'checkbox';
-    box.checked = !!item.done;
-    const text = span(item.text, 'check-text');
-    const remove = button('×', 'remove-button');
-    box.addEventListener('change', () => {
-      item.done = box.checked;
-      row.classList.toggle('done', item.done);
+  if (!note) return;
+  const items = note.checklist || [];
+  const completed = items.filter(item => item.done).length;
+  const filterLabels = { all: 'All', incomplete: 'Incomplete', complete: 'Complete' };
+  ui.itemFilter.querySelectorAll('[data-item-filter]').forEach(filterButton => {
+    const filter = filterButton.dataset.itemFilter;
+    const count = filter === 'all' ? items.length : filter === 'complete' ? completed : items.length - completed;
+    filterButton.textContent = `${filterLabels[filter]} (${count})`;
+    filterButton.classList.toggle('active', filter === state.itemFilter);
+  });
+
+  const visible = items.filter(item => state.itemFilter === 'all' ||
+    (state.itemFilter === 'complete' ? item.done : !item.done));
+  if (!visible.length) {
+    const empty = document.createElement('div');
+    empty.className = 'punch-empty';
+    empty.textContent = items.length ? `No ${state.itemFilter} items.` : 'No punch items yet. Add the first item above.';
+    ui.checklist.append(empty);
+    return;
+  }
+
+  visible.forEach(item => {
+    const originalIndex = items.indexOf(item);
+    const row = document.createElement('article');
+    row.className = `punch-item${item.done ? ' done' : ''}`;
+
+    const number = span(String(originalIndex + 1), 'item-number');
+    const photos = document.createElement('div');
+    photos.className = 'punch-photos';
+    (item.photos || []).forEach(photo => {
+      const frame = document.createElement('div');
+      frame.className = 'punch-photo';
+      const image = document.createElement('img');
+      image.src = photo.data;
+      image.alt = photo.name || `Photo for item ${originalIndex + 1}`;
+      image.addEventListener('click', () => window.open(photo.data, '_blank', 'noopener'));
+      const removePhoto = button('×', 'punch-photo-remove');
+      removePhoto.setAttribute('aria-label', 'Remove item photo');
+      removePhoto.addEventListener('click', () => {
+        item.photos = item.photos.filter(entry => entry.id !== photo.id);
+        renderChecklist(note);
+        scheduleSave();
+      });
+      frame.append(image, removePhoto);
+      photos.append(frame);
+    });
+    const addPhoto = document.createElement('label');
+    addPhoto.className = 'punch-photo-add';
+    const plus = document.createElement('strong');
+    plus.textContent = '+';
+    addPhoto.append(plus, document.createTextNode('Photo'));
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.hidden = true;
+    input.addEventListener('change', async event => {
+      await addPunchItemPhotos(note, item, [...event.target.files]);
+    });
+    addPhoto.append(input);
+    photos.append(addPhoto);
+
+    const notes = document.createElement('textarea');
+    notes.className = 'punch-notes';
+    notes.value = item.text || '';
+    notes.placeholder = 'Describe the work that must be corrected…';
+    notes.addEventListener('input', () => {
+      item.text = notes.value;
       scheduleSave();
     });
-    remove.addEventListener('click', () => {
+
+    const controls = document.createElement('div');
+    controls.className = 'punch-item-controls';
+    const complete = button('', 'complete-toggle');
+    complete.append(span(item.done ? '✓' : '○'), document.createTextNode(item.done ? 'DONE' : 'OPEN'));
+    complete.addEventListener('click', () => {
+      item.done = !item.done;
+      renderChecklist(note);
+      scheduleSave();
+    });
+    const reorder = document.createElement('div');
+    reorder.className = 'reorder-buttons';
+    const up = button('↑');
+    const down = button('↓');
+    up.disabled = originalIndex === 0;
+    down.disabled = originalIndex === items.length - 1;
+    up.addEventListener('click', () => movePunchItem(note, originalIndex, -1));
+    down.addEventListener('click', () => movePunchItem(note, originalIndex, 1));
+    reorder.append(up, down);
+    const removeItem = button('Delete', 'item-delete');
+    removeItem.addEventListener('click', () => {
+      if (!confirm(`Delete punch item ${originalIndex + 1}?`)) return;
       note.checklist = note.checklist.filter(entry => entry.id !== item.id);
       renderChecklist(note);
       scheduleSave();
     });
-    row.append(box, text, remove);
+    controls.append(complete, reorder, removeItem);
+    row.append(number, photos, notes, controls);
     ui.checklist.append(row);
   });
+}
+
+function movePunchItem(note, index, direction) {
+  const destination = index + direction;
+  if (destination < 0 || destination >= note.checklist.length) return;
+  const [item] = note.checklist.splice(index, 1);
+  note.checklist.splice(destination, 0, item);
+  renderChecklist(note);
+  scheduleSave();
+}
+
+async function addPunchItemPhotos(note, item, files) {
+  item.photos = item.photos || [];
+  for (const file of files) {
+    if (file.size > 6 * 1024 * 1024) {
+      showToast(`${file.name} is larger than 6 MB and was skipped`);
+      continue;
+    }
+    try {
+      item.photos.push({ id: makeId(), name: file.name, type: file.type, data: await readFileAsDataUrl(file) });
+    } catch (error) {
+      console.error(error);
+      showToast(`Could not attach ${file.name}`);
+    }
+  }
+  renderChecklist(note);
+  scheduleSave();
 }
 
 async function addPhotos(event) {
@@ -368,7 +498,9 @@ async function deleteActiveNote() {
   state.activeId = null;
   ui.moreMenu.hidden = true;
   ui.noteEditor.hidden = true;
+  ui.noteEditor.style.display = 'none';
   ui.welcome.hidden = false;
+  ui.welcome.style.display = 'flex';
   document.body.classList.remove('editor-open');
   renderAll();
   if (state.notes.length && innerWidth > 900) openNote(filteredNotes()[0]?.id || state.notes[0].id, false);
@@ -397,11 +529,15 @@ async function printNote() {
   await saveActiveNow();
   ui.moreMenu.hidden = true;
   const oldHeight = ui.bodyInput.style.height;
+  const punchTextareas = [...document.querySelectorAll('.punch-notes')];
+  const oldPunchHeights = punchTextareas.map(textarea => textarea.style.height);
   ui.bodyInput.style.height = `${ui.bodyInput.scrollHeight}px`;
+  punchTextareas.forEach(textarea => textarea.style.height = `${textarea.scrollHeight}px`);
   showToast('In the print screen, choose Save as PDF');
   setTimeout(() => {
     window.print();
     ui.bodyInput.style.height = oldHeight;
+    punchTextareas.forEach((textarea, index) => textarea.style.height = oldPunchHeights[index]);
   }, 250);
 }
 
@@ -411,8 +547,11 @@ function noteAsText(note) {
   if (note.tags) lines.push(`Tags: ${note.tags}`);
   if (note.body) lines.push('', note.body);
   if (note.checklist?.length) {
-    lines.push('', 'Checklist:');
-    note.checklist.forEach(item => lines.push(`${item.done ? '☑' : '☐'} ${item.text}`));
+    lines.push('', 'Punch List:');
+    note.checklist.forEach((item, index) => {
+      const photoCount = item.photos?.length ? ` (${item.photos.length} photo${item.photos.length === 1 ? '' : 's'})` : '';
+      lines.push(`${index + 1}. ${item.done ? '☑' : '☐'} ${item.text}${photoCount}`);
+    });
   }
   return lines.join('\n');
 }
@@ -439,19 +578,19 @@ function renderList() {
   const notes = filteredNotes();
   const type = TYPES.find(item => item.id === state.filter);
   ui.listTitle.textContent = type?.label || 'All notes';
-  ui.listCount.textContent = `${notes.length} ${notes.length === 1 ? 'note' : 'notes'}`;
+  ui.listCount.textContent = `${notes.length} ${notes.length === 1 ? 'list' : 'lists'}`;
   ui.notesList.replaceChildren();
   ui.emptyList.hidden = notes.length > 0;
 
   notes.forEach(note => {
     const card = document.createElement('article');
     card.className = `note-card${note.id === state.activeId ? ' active' : ''}`;
-    card.addEventListener('click', () => openNote(note.id));
+    card.dataset.noteId = String(note.id);
     const head = document.createElement('div');
     head.className = 'note-card-head';
     if (note.pinned) head.append(span('★', 'pin-star'));
     const title = document.createElement('h2');
-    title.textContent = note.title.trim() || 'Untitled note';
+    title.textContent = note.title.trim() || 'Untitled list';
     head.append(title, span(note.type, 'type-pill'));
 
     const preview = document.createElement('p');
@@ -533,7 +672,9 @@ async function importBackup(event) {
     if (state.notes.length) openNote(state.notes[0].id, false);
     else {
       ui.noteEditor.hidden = true;
+      ui.noteEditor.style.display = 'none';
       ui.welcome.hidden = false;
+      ui.welcome.style.display = 'flex';
     }
     showToast('Backup restored');
   } catch (error) {
@@ -542,7 +683,29 @@ async function importBackup(event) {
   }
 }
 
-function activeNote() { return state.notes.find(note => note.id === state.activeId); }
+function normalizeNote(note) {
+  const now = Date.now();
+  return {
+    id: note.id || makeId(),
+    title: note.title || '',
+    body: note.body || '',
+    type: note.type || 'Regular Note',
+    project: note.project || '',
+    tags: note.tags || '',
+    pinned: !!note.pinned,
+    checklist: Array.isArray(note.checklist) ? note.checklist.map(item => ({
+      id: item.id || makeId(),
+      text: item.text || '',
+      done: !!item.done,
+      photos: Array.isArray(item.photos) ? item.photos : []
+    })) : [],
+    photos: Array.isArray(note.photos) ? note.photos : [],
+    createdAt: note.createdAt || now,
+    updatedAt: note.updatedAt || note.createdAt || now
+  };
+}
+
+function activeNote() { return state.notes.find(note => String(note.id) === String(state.activeId)); }
 function sortNotes() { state.notes.sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.updatedAt - a.updatedAt); }
 function makeId() { return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function span(text, className = '') { const node = document.createElement('span'); node.textContent = text; node.className = className; return node; }

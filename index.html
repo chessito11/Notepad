@@ -24,7 +24,7 @@
         <div class="brand-mark">A</div>
         <div><strong>ATLAS</strong><span>NOTEPAD</span></div>
       </div>
-      <button id="newButton" class="primary wide">＋ New note</button>
+      <button id="newButton" class="primary wide">＋ New list</button>
 
       <nav id="typeNav" class="type-nav" aria-label="Note filters"></nav>
 
@@ -37,33 +37,33 @@
       <button id="backupButton" class="ghost wide">Export backup</button>
       <button id="restoreButton" class="ghost wide">Import backup</button>
       <input id="restoreInput" type="file" accept="application/json" hidden>
-      <p class="version">ATLAS Notepad v1.1</p>
+      <p class="version">ATLAS Notepad v1.4</p>
     </aside>
 
     <div id="scrim" class="scrim"></div>
 
     <section class="notes-panel">
       <div class="panel-heading">
-        <div><h1 id="listTitle">All notes</h1><p id="listCount">0 notes</p></div>
+        <div><h1 id="listTitle">All lists</h1><p id="listCount">0 lists</p></div>
       </div>
       <label class="search-box">
         <span>⌕</span>
-        <input id="searchInput" type="search" placeholder="Search notes, jobs, or tags" autocomplete="off">
+        <input id="searchInput" type="search" placeholder="Search lists, jobs, or tags" autocomplete="off">
       </label>
       <div id="notesList" class="notes-list"></div>
       <div id="emptyList" class="empty-state" hidden>
         <div class="empty-icon">✎</div>
-        <h2>No notes here</h2>
-        <p>Tap New note to capture an idea, field issue, material list, or checklist.</p>
+        <h2>No lists here</h2>
+        <p>Tap New list to create a project punch list, material list, field issue, or checklist.</p>
       </div>
     </section>
 
     <main id="editor" class="editor-panel">
       <div id="welcome" class="welcome">
         <div class="welcome-mark">A</div>
-        <h1>Your jobsite memory</h1>
-        <p>Keep ordinary notes and construction records together—even without internet.</p>
-        <button id="welcomeNewButton" class="primary">Create your first note</button>
+        <h1>Your field lists</h1>
+        <p>Create punch items with photos, completion tracking, and a clean PDF report—even without internet.</p>
+        <button id="welcomeNewButton" class="primary">Create your first list</button>
       </div>
 
       <article id="noteEditor" class="note-editor" hidden>
@@ -85,7 +85,7 @@
         </div>
 
         <div class="editor-scroll">
-          <input id="titleInput" class="title-input" placeholder="Untitled note" autocomplete="off">
+          <input id="titleInput" class="title-input" placeholder="Punch list title" autocomplete="off">
           <div class="meta-grid">
             <label>Note type
               <select id="typeInput"></select>
@@ -103,17 +103,28 @@
           </label>
 
           <section class="editor-card">
-            <div class="card-heading"><div><h2>Checklist</h2><p>Materials, tasks, punch list, or reminders</p></div></div>
-            <div class="add-row">
-              <input id="checklistInput" placeholder="Add a checklist item">
-              <button id="addChecklistButton" class="secondary">Add</button>
+            <div class="card-heading punch-heading">
+              <div><h2>Punch List Items</h2><p>Each item can hold notes, unlimited photos, and a completion check</p></div>
+              <div id="itemFilter" class="item-filter" aria-label="Filter punch items">
+                <button type="button" data-item-filter="all" class="active">All</button>
+                <button type="button" data-item-filter="incomplete">Incomplete</button>
+                <button type="button" data-item-filter="complete">Complete</button>
+              </div>
             </div>
-            <div id="checklist" class="checklist"></div>
+            <div class="add-row item-add-controls">
+              <input id="checklistInput" placeholder="Describe the punch item">
+              <button id="addChecklistButton" class="primary">＋ Add Item</button>
+            </div>
+            <div id="checklist" class="checklist punch-items"></div>
+            <div class="punch-actions">
+              <button id="addItemBottomButton" class="secondary">＋ Add Item</button>
+              <button id="punchPdfButton" class="primary">Create PDF</button>
+            </div>
           </section>
 
           <section class="editor-card">
             <div class="card-heading">
-              <div><h2>Photo attachments</h2><p>Photos remain stored with this note on this device</p></div>
+              <div><h2>General photo attachments</h2><p>Reference photos for the entire list; punch items can also hold unlimited photos</p></div>
               <label class="secondary file-button">＋ Add photos<input id="photoInput" type="file" accept="image/*" multiple hidden></label>
             </div>
             <div id="photoGrid" class="photo-grid"></div>

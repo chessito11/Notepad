@@ -1,4 +1,4 @@
-const CACHE_NAME = 'atlas-notepad-v1.1.0';
+const CACHE_NAME = 'atlas-notepad-v1.4.0';
 const APP_SHELL = [
   './',
   './index.html',

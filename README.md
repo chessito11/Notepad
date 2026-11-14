@@ -11,6 +11,8 @@ An installable, offline-first notepad for regular notes and construction field r
 - Share text and print/save individual notes as PDF
 - Visible Save, PDF, and Delete controls on phone and desktop
 - Smooth touch scrolling through long notes
+- Reliable opening of existing notes on installed Android and browser versions
+- Punch-list item cards with unlimited per-item photos, completion, filtering, and reordering
 - Full JSON backup and restore
 - Responsive phone, tablet, and desktop layout
 - Installable on Android from Chrome
