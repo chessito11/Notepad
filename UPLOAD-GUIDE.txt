@@ -14,6 +14,12 @@ ATLAS NOTEPAD — GITHUB UPLOAD
 
 GitHub will provide the website address after deployment finishes.
 
+UPDATING AN EXISTING ATLAS-NOTEPAD REPOSITORY
+
+Upload the new files and replace the older files when GitHub asks. After the
+commit finishes, GitHub Pages will rebuild automatically. Open the app while
+online and refresh once so the new offline files are installed.
+
 ANDROID OFFLINE INSTALL
 
 1. Open the GitHub Pages website in Chrome on the Android tablet or phone.

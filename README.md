@@ -9,6 +9,8 @@ An installable, offline-first notepad for regular notes and construction field r
 - Search, type filters, project/job field, tags, and pinned notes
 - Checklists and photo attachments
 - Share text and print/save individual notes as PDF
+- Visible Save, PDF, and Delete controls on phone and desktop
+- Smooth touch scrolling through long notes
 - Full JSON backup and restore
 - Responsive phone, tablet, and desktop layout
 - Installable on Android from Chrome

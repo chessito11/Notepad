@@ -37,8 +37,10 @@ async function init() {
     'typeNav', 'searchInput', 'notesList', 'emptyList', 'listTitle', 'listCount',
     'welcome', 'noteEditor', 'titleInput', 'typeInput', 'projectInput', 'tagsInput',
     'bodyInput', 'checklistInput', 'addChecklistButton', 'checklist', 'photoInput',
-    'photoGrid', 'saveStatus', 'pinButton', 'moreButton', 'moreMenu', 'duplicateButton',
-    'shareButton', 'printButton', 'footerPrintButton', 'deleteButton', 'backToListButton',
+    'photoGrid', 'saveStatus', 'pinButton', 'saveButton', 'toolbarPdfButton',
+    'toolbarDeleteButton', 'moreButton', 'moreMenu', 'duplicateButton', 'shareButton',
+    'printButton', 'footerSaveButton', 'footerPdfButton', 'footerDeleteButton',
+    'deleteButton', 'backToListButton',
     'updatedLabel', 'installButton', 'backupButton', 'restoreButton', 'restoreInput',
     'offlineDot', 'offlineTitle', 'toast'
   ].forEach(id => ui[id] = el(id));
@@ -111,6 +113,12 @@ function bindEvents() {
     updatePinButton(note);
     scheduleSave();
   });
+  ui.saveButton.addEventListener('click', manualSave);
+  ui.footerSaveButton.addEventListener('click', manualSave);
+  ui.toolbarPdfButton.addEventListener('click', printNote);
+  ui.footerPdfButton.addEventListener('click', printNote);
+  ui.toolbarDeleteButton.addEventListener('click', deleteActiveNote);
+  ui.footerDeleteButton.addEventListener('click', deleteActiveNote);
 
   ui.addChecklistButton.addEventListener('click', addChecklistItem);
   ui.checklistInput.addEventListener('keydown', event => {
@@ -131,7 +139,6 @@ function bindEvents() {
   ui.duplicateButton.addEventListener('click', duplicateNote);
   ui.shareButton.addEventListener('click', shareNote);
   ui.printButton.addEventListener('click', printNote);
-  ui.footerPrintButton.addEventListener('click', printNote);
   ui.deleteButton.addEventListener('click', deleteActiveNote);
 
   ui.backupButton.addEventListener('click', exportBackup);
@@ -246,6 +253,12 @@ async function saveActiveNow() {
     ui.saveStatus.textContent = 'Save failed';
     showToast('Could not save this note');
   }
+}
+
+async function manualSave() {
+  if (!activeNote()) return;
+  await saveActiveNow();
+  showToast('Note saved offline');
 }
 
 function addChecklistItem() {
@@ -385,8 +398,11 @@ async function printNote() {
   ui.moreMenu.hidden = true;
   const oldHeight = ui.bodyInput.style.height;
   ui.bodyInput.style.height = `${ui.bodyInput.scrollHeight}px`;
-  window.print();
-  ui.bodyInput.style.height = oldHeight;
+  showToast('In the print screen, choose Save as PDF');
+  setTimeout(() => {
+    window.print();
+    ui.bodyInput.style.height = oldHeight;
+  }, 250);
 }
 
 function noteAsText(note) {
