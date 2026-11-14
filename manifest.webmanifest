@@ -1,0 +1,16 @@
+{
+  "name": "ATLAS Notepad",
+  "short_name": "ATLAS Notes",
+  "description": "Offline notes, checklists, and construction field records.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2f5f8",
+  "theme_color": "#0b1f33",
+  "categories": ["productivity", "business", "utilities"],
+  "icons": [
+    {"src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

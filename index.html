@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1f33">
+  <meta name="description" content="Offline notes, checklists, and construction field records.">
+  <title>ATLAS Notepad</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon-192.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="mobile-header">
+      <button id="menuButton" class="icon-button" aria-label="Open menu">☰</button>
+      <div class="mobile-brand"><span class="brand-a">A</span>TLAS Notepad</div>
+      <button id="mobileNewButton" class="primary small">＋ New</button>
+    </header>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div><strong>ATLAS</strong><span>NOTEPAD</span></div>
+      </div>
+      <button id="newButton" class="primary wide">＋ New note</button>
+
+      <nav id="typeNav" class="type-nav" aria-label="Note filters"></nav>
+
+      <div class="sidebar-spacer"></div>
+      <div class="storage-card">
+        <span id="offlineDot" class="status-dot"></span>
+        <div><strong id="offlineTitle">Offline ready</strong><small>Notes stay on this device</small></div>
+      </div>
+      <button id="installButton" class="secondary wide" hidden>Install app</button>
+      <button id="backupButton" class="ghost wide">Export backup</button>
+      <button id="restoreButton" class="ghost wide">Import backup</button>
+      <input id="restoreInput" type="file" accept="application/json" hidden>
+      <p class="version">ATLAS Notepad v1.0</p>
+    </aside>
+
+    <div id="scrim" class="scrim"></div>
+
+    <section class="notes-panel">
+      <div class="panel-heading">
+        <div><h1 id="listTitle">All notes</h1><p id="listCount">0 notes</p></div>
+      </div>
+      <label class="search-box">
+        <span>⌕</span>
+        <input id="searchInput" type="search" placeholder="Search notes, jobs, or tags" autocomplete="off">
+      </label>
+      <div id="notesList" class="notes-list"></div>
+      <div id="emptyList" class="empty-state" hidden>
+        <div class="empty-icon">✎</div>
+        <h2>No notes here</h2>
+        <p>Tap New note to capture an idea, field issue, material list, or checklist.</p>
+      </div>
+    </section>
+
+    <main id="editor" class="editor-panel">
+      <div id="welcome" class="welcome">
+        <div class="welcome-mark">A</div>
+        <h1>Your jobsite memory</h1>
+        <p>Keep ordinary notes and construction records together—even without internet.</p>
+        <button id="welcomeNewButton" class="primary">Create your first note</button>
+      </div>
+
+      <article id="noteEditor" class="note-editor" hidden>
+        <div class="editor-toolbar">
+          <button id="backToListButton" class="icon-button mobile-only" aria-label="Back to notes">‹</button>
+          <span id="saveStatus" class="save-status">Saved offline</span>
+          <div class="toolbar-spacer"></div>
+          <button id="pinButton" class="secondary compact">☆ Pin</button>
+          <button id="moreButton" class="icon-button" aria-label="More actions">⋮</button>
+          <div id="moreMenu" class="more-menu" hidden>
+            <button id="duplicateButton">Duplicate note</button>
+            <button id="shareButton">Share text</button>
+            <button id="printButton">Print / Save PDF</button>
+            <button id="deleteButton" class="danger-text">Delete note</button>
+          </div>
+        </div>
+
+        <div class="editor-scroll">
+          <input id="titleInput" class="title-input" placeholder="Untitled note" autocomplete="off">
+          <div class="meta-grid">
+            <label>Note type
+              <select id="typeInput"></select>
+            </label>
+            <label>Project / job
+              <input id="projectInput" placeholder="Example: Knoxville Panels">
+            </label>
+            <label class="tags-field">Tags
+              <input id="tagsInput" placeholder="Example: framing, RFI, urgent">
+            </label>
+          </div>
+
+          <label class="body-label">Notes
+            <textarea id="bodyInput" placeholder="Write anything here…"></textarea>
+          </label>
+
+          <section class="editor-card">
+            <div class="card-heading"><div><h2>Checklist</h2><p>Materials, tasks, punch list, or reminders</p></div></div>
+            <div class="add-row">
+              <input id="checklistInput" placeholder="Add a checklist item">
+              <button id="addChecklistButton" class="secondary">Add</button>
+            </div>
+            <div id="checklist" class="checklist"></div>
+          </section>
+
+          <section class="editor-card">
+            <div class="card-heading">
+              <div><h2>Photo attachments</h2><p>Photos remain stored with this note on this device</p></div>
+              <label class="secondary file-button">＋ Add photos<input id="photoInput" type="file" accept="image/*" multiple hidden></label>
+            </div>
+            <div id="photoGrid" class="photo-grid"></div>
+          </section>
+
+          <div class="editor-footer">
+            <span id="updatedLabel"></span>
+            <button id="footerPrintButton" class="primary">Print / Save PDF</button>
+          </div>
+        </div>
+      </article>
+    </main>
+  </div>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
