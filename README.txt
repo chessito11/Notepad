@@ -1,1 +1,1 @@
-Prototype 02: text dialog, multiline text, text size, return to Pencil. Existing localStorage key unchanged. Back up before updating. Replace index.html and sw.js together on the same GitHub Pages site; refresh after deployment. Physical tablet testing pending.
+Prototype 03: Text opens from toolbar. Type, Add Text, then tap paper. Back up before replacing index.html and sw.js. Confirm Prototype 03 header.
